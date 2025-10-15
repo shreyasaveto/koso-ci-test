@@ -1,0 +1,42 @@
+name: Build & Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1 Checkout repo code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2 Login to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      # 3 Pull latest image for cache
+      - name: Pull latest image for cache
+        run: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/koso-ci-test:latest || true
+
+      # 4 Build Docker image with cache
+      - name: Build Docker image with cache
+        run: |
+          docker build \
+            --cache-from=${{ secrets.DOCKERHUB_USERNAME }}/koso-ci-test:latest \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/koso-ci-test:latest .
+
+      # 5 Push Docker image to Docker Hub
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/koso-ci-test:latest
+
+      - name: Build & Push Complete
+        run: echo "Docker build and push complete!"
